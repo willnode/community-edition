@@ -61,7 +61,7 @@ README.md           clickhouse/         docker-compose.yml  images/             
 
 In the downloaded directory you'll find two important files:
 
-- [docker-compose.yml](./docker-compose.yml) — installs and orchestrates networking between your Plausible CE server, Postgres database, Clickhouse database (for stats), and an SMTP server.
+- [docker-compose.yml](./docker-compose.yml) — installs and orchestrates networking between your Plausible CE server, Postgres database, and Clickhouse database for stats.
 - [plausible-conf.env](./plausible-conf.env) — configures the Plausible server itself. Full configuration options are documented [below.](#configure)
 
 Right now the latter looks like this:
@@ -70,18 +70,21 @@ Right now the latter looks like this:
 ```env
 BASE_URL=replace-me
 SECRET_KEY_BASE=replace-me
+TOTP_VAULT_KEY=replace-me
 ```
 
 Let's do as it asks and populate these required environment variables with our own values.
 
 #### Required configuration
 
-First we generate the [secret key base](#secret_key_base) using OpenSSL:
+First we generate the [secret key base](#secret_key_base) and [TOTP vault key](#totp_vault_key) using OpenSSL:
 
 <sub><kbd>console</kbd></sub>
 ```console
 $ openssl rand -base64 48
 GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl/k/TqfTUXti7FLBd7aflXeQDdwCj6Cz
+$ openssl rand -base64 32
+dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
 ```
 
 And then we decide on the [base URL](#base_url) where the instance would be accessible:
@@ -92,6 +95,8 @@ And then we decide on the [base URL](#base_url) where the instance would be acce
 + BASE_URL=http://plausible.example.com
 - SECRET_KEY_BASE=replace-me
 + SECRET_KEY_BASE=GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl/k/TqfTUXti7FLBd7aflXeQDdwCj6Cz
+- TOTP_VAULT_KEY=replace-me
++ TOTP_VAULT_KEY=dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
 ```
 
 We can start our instance now but the requests would be served over HTTP. Not cool! Let's configure [Caddy](https://caddyserver.com) to enable HTTPS.
@@ -142,6 +147,7 @@ Finally we need to update the base URL to use HTTPS scheme.
 - BASE_URL=http://plausible.example.com
 + BASE_URL=https://plausible.example.com
   SECRET_KEY_BASE=GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl/k/TqfTUXti7FLBd7aflXeQDdwCj6Cz
+  TOTP_VAULT_KEY=dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
 ```
 
 Now we can start everything together.
@@ -175,22 +181,20 @@ Next we'll go over how to upgrade the instance when a new release comes out, mor
 
 ## Upgrade
 
-Each new [release](https://github.com/plausible/analytics/releases/tag/v2.0.0) contains information on how to upgrade to it from the previous version. This section outlines the
-general steps and explains the versioning.
+Each new [release](https://github.com/plausible/analytics/releases) contains information on how to upgrade to it from the previous version. This section outlines the general steps and explains the versioning.
 
 ### Version management
 
 Plausible CE follows [semantic versioning:](https://semver.org/) `MAJOR.MINOR.PATCH`
 
-You can find available Plausible versions on [DockerHub](https://hub.docker.com/r/plausible/analytics). The default `latest` tag refers to the latest stable release tag. You can also pin your version:
+You can find available Plausible versions on [Github packages.](https://github.com/plausible/analytics/pkgs/container/community-edition) The default `latest` tag refers to the latest stable release tag. You can also pin your version:
 
-- <kbd>plausible/analytics:v2</kbd> pins the major version to 2 but allows minor and patch version upgrades
-- <kbd>plausible/analytics:v2.0</kbd> pins the minor version to 2.0 but allows only patch upgrades
+- <kbd>ghcr.io/plausible/community-edition:v2</kbd> pins the major version to `2` but allows minor and patch version upgrades
+- <kbd>ghcr.io/plausible/community-edition:v2.1</kbd> pins the minor version to `2.1` but allows only patch upgrades
 
 None of the functionality is backported to older versions. If you wish to get the latest bug fixes and security updates you need to upgrade to a newer version.
 
-New versions are published on [the releases page](https://github.com/plausible/analytics/releases) and their changes are documented in our [Changelog.](https://github.com/plausible/analytics/blob/master/CHANGELOG.md) Please note that database schema changes require running migrations when you're upgrading. However, we consider the schema
-as an internal API and therefore schema changes aren't considered a breaking change.
+New versions are published on [the releases page](https://github.com/plausible/analytics/releases) and their changes are documented in our [Changelog.](https://github.com/plausible/analytics/blob/master/CHANGELOG.md) Please note that database schema changes require running migrations when you're upgrading. However, we consider the schema as an internal API and therefore schema changes aren't considered a breaking change.
 
 We recommend to pin the major version instead of using `latest`. Either way the general flow for upgrading between minor version would look like this:
 
@@ -219,14 +223,12 @@ $ docker compose -f docker-compose.yml -f reverse-proxy/docker-compose.caddy-gen
  ✔ Container hosting-plausible_db-1         Running    0.0s
  ✔ Container hosting-plausible-1            Started    1.2s
  ✔ Container caddy-gen                      Running    0.0s
-$ docker images --filter=reference='plausible/analytics:*'
-REPOSITORY            TAG       IMAGE ID       CREATED        SIZE
-plausible/analytics   v2.0      2b2735265a65   7 months ago   163MB
-plausible/analytics   v1.5      5e1e0047953a   8 months ago   130MB
-$ docker rmi 5e1e0047953a
-Untagged: plausible/analytics:v1.5
-Untagged: plausible/analytics@sha256:365124b00f103ac40ce3c64cd49a869d94f2ded221d9bb7900be1cecfaf34acf
-Deleted: sha256:5e1e0047953afc179ee884389e152b3f07343fb34e5586f9ecc2f33c6ba3bcaa
+$ docker images --filter=reference='ghcr.io/plausible/community-edition:*'
+REPOSITORY                            TAG           IMAGE ID       CREATED        SIZE
+ghcr.io/plausible/community-edition   v2.1          63f7c8708294   6 days ago     83.4MB
+ghcr.io/plausible/community-edition   v2.1.0-rc.0   2b2735265a65   7 months ago   163MB
+$ docker rmi 2b2735265a65
+Untagged: ghcr.io/plausible/community-edition:v2.1.0-rc.0
 ...
 ```
 
@@ -250,6 +252,7 @@ Here's the minimal configuration file we got from the [quick start:](#quick-star
 ```env
 BASE_URL=https://plausible.example.com
 SECRET_KEY_BASE=GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl/k/TqfTUXti7FLBd7aflXeQDdwCj6Cz
+TOTP_VAULT_KEY=dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
 ```
 
 And here's a configuration with some extra options provided:
@@ -258,12 +261,18 @@ And here's a configuration with some extra options provided:
 ```env
 BASE_URL=https://plausible.example.com
 SECRET_KEY_BASE=GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl/k/TqfTUXti7FLBd7aflXeQDdwCj6Cz
+TOTP_VAULT_KEY=dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
 MAXMIND_LICENSE_KEY=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
 MAXMIND_EDITION=GeoLite2-City
 GOOGLE_CLIENT_ID=140927866833-002gqg48rl4iku76lbkk0qhu0i0m7bia.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
 MAILER_NAME=Plausible
-MAILER_EMAIL=plausible@plausible.example.com
+MAILER_EMAIL=somebody+plausible@gmail.com
+MAILER_ADAPTER=Bamboo.Mua
+SMTP_HOST_ADDR=smtp.gmail.com
+SMTP_HOST_PORT=587
+SMTP_USER_NAME=somebody@gmail.com
+SMTP_USER_PWD="wnqj fkbn jcwc byxk" 
 DISABLE_REGISTRATION=invite_only
 ```
 
@@ -302,6 +311,23 @@ SECRET_KEY_BASE=GLVzDZW04FzuS1gMcmBRVhwgd4Gu9YmSl/k/TqfTUXti7FLBd7aflXeQDdwCj6Cz
 
 > [!WARNING]
 > Don't use this exact value or someone would be able to sign a cookie with `user_id=1` and log in as the admin!
+
+---
+
+#### TOTP_VAULT_KEY
+
+Configures the secret used for encrypting TOTP secrets at rest using AES256-GCM, doesn't have any defaults and needs to be provided in the ENV vars, can be generated with OpenSSL:
+
+<sub><kbd>console</kbd></sub>
+```console
+$ openssl rand -base64 32
+dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
+```
+
+<sub><kbd>plausible-conf.env</kbd></sub>
+```env
+TOTP_VAULT_KEY=dsxvbn3jxDd16az2QpsX5B8O+llxjQ2SJE2i5Bzx38I=
+``````
 
 ### Registration
 
@@ -462,13 +488,40 @@ MaxMind database edition to use (only if [MAXMIND_LICENSE_KEY](#maxmind_license_
 
 Plausible CE sends transactional emails e.g. account activation, password reset. In addition, it sends non-transactional emails like weekly or monthly reports.
 
-It uses SMTP with a [relay](./docker-compose.yml#L3-L5) by default. Alternatively, you can use other [services](https://hexdocs.pm/bamboo/readme.html#available-adapters) such as Postmark, Mailgun, Mandrill or Send Grid to send emails.
+It uses SMTP with an optional [relay](#smtp_host_addr) by default. Alternatively, you can use other [services](https://hexdocs.pm/bamboo/readme.html#available-adapters) such as Postmark, Mailgun, Mandrill or Send Grid to send emails.
+
+[Here's](https://gist.github.com/ruslandoga/c94ce526231fb77930132aaeda3fc3c9) a short guide on using your Gmail account for email delivery.
 
 #### MAILER_ADAPTER
 
 Default: `Bamboo.SMTPAdapter`
 
 Instead of the default, you can replace this with <kbd>Bamboo.PostmarkAdapter</kbd>, <kbd>Bamboo.MailgunAdapter</kbd>, <kbd>Bamboo.MandrillAdapter</kbd> or <kbd>Bamboo.SendGridAdapter</kbd> and add the appropriate variables.
+
+<details>
+<summary>Having problems with the default SMTP client?</summary>
+
+---
+
+Please try the new SMTP client introduced in [v2.1.0-rc.1](https://github.com/plausible/analytics/discussions/4084) by setting MAILER_ADAPTER to `Bamboo.Mua`. All the `SMTP_*` environment variables can stay the same.
+
+<sub><kbd>plausible-conf.env</kbd></sub>
+```diff
+  BASE_URL=https://plausible.example.com
+  SECRET_KEY_BASE=PkVcxRgQDfQyhPETlog3vvCrj5LdYFSv4ejPEJHJO+i/37w6RZfRjeVCpJayjUjJMfXsNurcv5upPhTRoD3KgQ==
+  TOTP_VAULT_KEY=aihU7k+GSBKbcVFuX9VEPyUhuwlKEomqA94/SQQ0NR4=
+  SMTP_HOST_ADDR=smtp.gmail.com
+  SMTP_HOST_PORT=587
+  SMTP_USER_NAME=somebody@gmail.com
+  SMTP_USER_PWD="wnqj fkbn jcwc byxk"
++ MAILER_ADAPTER=Bamboo.Mua
+```
+
+We plan to make it the new default in the final v2.1.0 release.
+
+---
+
+</details>
 
 #### MAILER_EMAIL
 
@@ -483,8 +536,6 @@ The display name for the sender (_from_).
 ---
 
 #### SMTP_HOST_ADDR
-
-Default: [`mail`](./docker-compose.yml#L3-L5)
 
 The host address of your SMTP relay.
 
@@ -751,6 +802,10 @@ Trust our own application.
 
 <img src="./images/6-continue.png">
 
+Trust more.
+
+<img src="./images/6-sign-in-copycat.png">
+
 Allow viewing Search Console data.
 
 <img src="./images/6-view-search-console-data.png">
@@ -801,9 +856,21 @@ Trust our own application.
 
 <img src="./images/6-continue.png">
 
-Pick the view to import and then follow the Plausible directions.
+Trust more.
+
+<img src="./images/6-data-continue.png">
+
+Pick the view to import.
 
 <img src="./images/6-pick-view.png">
+
+And then follow the Plausible directions.
+
+<img src="./images/6-import-continue.png">
+
+Confirm everything's in order and start the import.
+
+<img src="./images/6-import.png">
 
 You'll receive an email once the data is imported.
 

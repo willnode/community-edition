@@ -1,8 +1,4 @@
 services:
-  mail:
-    image: bytemark/smtp
-    restart: always
-
   plausible_db:
     # Plausible v2.0.0 was tested against PostgreSQL versions 12, 13, and 14
     # https://github.com/plausible/analytics/blob/v2.0.0/.github/workflows/elixir.yml#L16
@@ -14,7 +10,7 @@ services:
       - POSTGRES_PASSWORD=postgres
 
   plausible_events_db:
-    image: clickhouse/clickhouse-server:23.3.7.5-alpine
+    image: clickhouse/clickhouse-server:24.3.3.102-alpine
     restart: always
     volumes:
       - event-data:/var/lib/clickhouse
@@ -27,13 +23,12 @@ services:
         hard: 262144
 
   plausible:
-    image: plausible/analytics:v2.0
+    image: ghcr.io/plausible/community-edition:v2.1.0-rc.1
     restart: always
     command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
     depends_on:
       - plausible_db
       - plausible_events_db
-      - mail
     ports:
       - 127.0.0.1:8000:8000
     env_file:
@@ -46,4 +41,3 @@ volumes:
     driver: local
   event-logs:
     driver: local
-
