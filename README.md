@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-    <strong>A getting started guide to self-hosting Plausible Community Edition</strong>
+    <strong>A getting started guide to self-hosting <a href="https://plausible.io/blog/community-edition">Plausible Community Edition</a></strong>
 </p>
 
 <!-- TODO latest version, current version, requirements -->
@@ -31,7 +31,7 @@
 
 ## Install
 
-Plausible Community Edition (or CE for short) is designed to be self-hosted through Docker. You don't have to be a Docker expert to launch your own instance, but you should have a basic understanding of the command-line and networking to successfully set it up.
+[Plausible Community Edition (or CE for short)](https://plausible.io/blog/community-edition) is designed to be self-hosted through [Docker.](https://docs.docker.com/guides/get-started/) You don't have to be a Docker expert to launch your own instance, but you should have a basic understanding of the command-line and networking to successfully set it up.
 
 ### Requirements
 
