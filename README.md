@@ -503,7 +503,7 @@ Instead of the default, you can replace this with <kbd>Bamboo.PostmarkAdapter</k
 
 ---
 
-Please try the new SMTP client introduced in [v2.1.0-rc.1](https://github.com/plausible/analytics/discussions/4084) by setting MAILER_ADAPTER to `Bamboo.Mua`. All the `SMTP_*` environment variables can stay the same.
+Please try the new SMTP client introduced in [v2.1.0](https://github.com/plausible/analytics/discussions/4125) by setting MAILER_ADAPTER to `Bamboo.Mua`. All the `SMTP_*` environment variables can stay the same.
 
 <sub><kbd>plausible-conf.env</kbd></sub>
 ```diff
@@ -516,8 +516,6 @@ Please try the new SMTP client introduced in [v2.1.0-rc.1](https://github.com/pl
   SMTP_USER_PWD="wnqj fkbn jcwc byxk"
 + MAILER_ADAPTER=Bamboo.Mua
 ```
-
-We plan to make it the new default in the final v2.1.0 release.
 
 ---
 
